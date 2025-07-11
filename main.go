@@ -44,5 +44,9 @@ func main() {
 	e.GET("/tasks", getTasks)
 	e.POST("/tasks", postTask)
 
-	e.Start(":8080")
+	err := e.Start(":8080")
+
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
 }

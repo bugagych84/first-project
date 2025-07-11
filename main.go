@@ -34,8 +34,39 @@ func postTask(c echo.Context) error {
 	return c.JSON(http.StatusCreated, tasks)
 }
 
-func main() {
+func deleteTask(c echo.Context) error {
+	id := c.Param("id")
+	for i, t := range tasks {
+		if t.ID == id {
+			tasks = append(tasks[:i], tasks[i+1:]...)
+			return c.JSON(http.StatusOK, tasks)
+		}
+	}
+	return c.JSON(http.StatusNotFound, map[string]string{"error": "task not found"})
+}
 
+func patchTask(c echo.Context) error {
+	id := c.Param("id")
+	var req Task
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	for i, t := range tasks {
+		if t.ID == id {
+			tasks[i] = Task{
+				ID:   id,
+				Name: req.Name,
+				Done: req.Done,
+			}
+
+			return c.JSON(http.StatusOK, tasks)
+		}
+	}
+	return c.JSON(http.StatusNotFound, map[string]string{"error": "task not found"})
+}
+
+func main() {
 	e := echo.New()
 
 	e.Use(middleware.CORS())
@@ -43,6 +74,8 @@ func main() {
 
 	e.GET("/tasks", getTasks)
 	e.POST("/tasks", postTask)
+	e.DELETE("/tasks/:id", deleteTask)
+	e.PATCH("/tasks/:id", patchTask)
 
 	err := e.Start(":8080")
 

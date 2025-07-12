@@ -23,7 +23,6 @@ func (s taskService) GetAllTasks() ([]Task, error) {
 }
 
 func (s taskService) CreateTask(task Task) ([]Task, error) {
-
 	if err := s.repo.CreateTask(task); err != nil {
 		return nil, err
 	}
@@ -33,7 +32,6 @@ func (s taskService) CreateTask(task Task) ([]Task, error) {
 
 func (s taskService) GetTaskById(taskId string) (Task, error) {
 	task, err := s.repo.GetTaskById(taskId)
-
 	if err != nil {
 		return Task{}, err
 	}
@@ -43,7 +41,6 @@ func (s taskService) GetTaskById(taskId string) (Task, error) {
 
 func (s taskService) UpdateTask(taskId string, newTask Task) ([]Task, error) {
 	task, err := s.repo.GetTaskById(taskId)
-
 	if err != nil {
 		return []Task{}, err
 	}
@@ -64,7 +61,6 @@ func (s taskService) UpdateTask(taskId string, newTask Task) ([]Task, error) {
 
 func (s taskService) DeleteTaskById(taskId string) ([]Task, error) {
 	_, err := s.repo.GetTaskById(taskId)
-
 	if err != nil {
 		return []Task{}, err
 	}

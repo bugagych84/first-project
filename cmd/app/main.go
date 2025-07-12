@@ -1,11 +1,12 @@
 package main
 
 import (
+	"log"
+
 	"firstproject/internal/db"
 	"firstproject/internal/handlers"
 	"firstproject/internal/taskService"
 	"firstproject/internal/web/tasks"
-	"log"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -13,7 +14,6 @@ import (
 
 func main() {
 	dataBase, err := db.InitDB()
-
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -31,7 +31,6 @@ func main() {
 	tasks.RegisterHandlers(e, strictHandler)
 
 	err = e.Start(":8080")
-
 	if err != nil {
 		e.Logger.Fatal(err)
 	}

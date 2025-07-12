@@ -2,13 +2,15 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+
 	"firstproject/internal/taskService"
 	"firstproject/internal/web/tasks"
-	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	openapi_types "github.com/oapi-codegen/runtime/types"
-	"net/http"
 )
 
 type TaskHandler struct {

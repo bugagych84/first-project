@@ -22,3 +22,20 @@ run:
 
 gen:
 	oapi-codegen -config openapi\.openapi -include-tags tasks -package tasks openapi\openapi.yaml > internal\web\tasks\api.gen.go
+
+lint:
+	golangci-lint run --fix --color=always
+
+fmt:
+	go fmt ./...
+	gofumpt -l -w .
+	gci write --skip-generated .
+
+check-fmt:
+	gofumpt -l .
+	gci diff --skip-generated .
+
+test:
+	go test -v -cover ./...
+
+.PHONY: migrate-new migrate migrate-down run gen lint fmt check-fmt test

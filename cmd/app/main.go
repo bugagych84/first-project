@@ -4,6 +4,7 @@ import (
 	"firstproject/internal/db"
 	"firstproject/internal/handlers"
 	"firstproject/internal/taskService"
+	"firstproject/internal/web/tasks"
 	"log"
 
 	"github.com/labstack/echo/v4"
@@ -26,10 +27,8 @@ func main() {
 	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 
-	e.GET("/tasks", taskHandler.GetTasks)
-	e.POST("/tasks", taskHandler.PostTask)
-	e.DELETE("/tasks/:id", taskHandler.DeleteTask)
-	e.PATCH("/tasks/:id", taskHandler.PatchTask)
+	strictHandler := tasks.NewStrictHandler(taskHandler, nil)
+	tasks.RegisterHandlers(e, strictHandler)
 
 	err = e.Start(":8080")
 

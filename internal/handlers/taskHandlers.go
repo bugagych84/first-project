@@ -1,8 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"firstproject/internal/taskService"
+	"firstproject/internal/web/tasks"
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 	"net/http"
 )
 
@@ -14,54 +19,112 @@ func NewTaskHandler(s taskService.TaskService) *TaskHandler {
 	return &TaskHandler{service: s}
 }
 
-func (h *TaskHandler) GetTasks(c echo.Context) error {
-	tasks, err := h.service.GetAllTasks()
-
+func (h *TaskHandler) GetTasks(ctx context.Context, request tasks.GetTasksRequestObject) (tasks.GetTasksResponseObject, error) {
+	allTasks, err := h.service.GetAllTasks()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Could not get tasks"})
+		return nil, err
 	}
 
-	return c.JSON(http.StatusOK, tasks)
+	response := tasks.GetTasks200JSONResponse{}
+
+	for _, tsk := range allTasks {
+		task := tasks.Task{
+			Id:     &tsk.ID,
+			Name:   tsk.Name,
+			IsDone: tsk.IsDone,
+		}
+		response = append(response, task)
+	}
+
+	return response, nil
 }
 
-// Основные методы работы с задачами
-func (h *TaskHandler) PostTask(c echo.Context) error {
-	var req taskService.Task
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+func (h *TaskHandler) PostTasks(ctx context.Context, request tasks.PostTasksRequestObject) (tasks.PostTasksResponseObject, error) {
+	if request.Body == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Request body is required")
 	}
 
-	tasks, err := h.service.CreateTask(req.Name)
+	newUUID := openapi_types.UUID(uuid.New())
+
+	taskToCreate := taskService.Task{
+		ID:     newUUID,
+		Name:   request.Body.Name,
+		IsDone: request.Body.IsDone,
+	}
+
+	createdTasks, err := h.service.CreateTask(taskToCreate)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, tasks)
+	response := tasks.PostTasks201JSONResponse{}
+	for _, t := range createdTasks {
+		task := tasks.Task{
+			Id:     &t.ID,
+			Name:   t.Name,
+			IsDone: t.IsDone,
+		}
+		response = append(response, task)
+	}
+
+	return response, nil
 }
 
-func (h *TaskHandler) DeleteTask(c echo.Context) error {
-	id := c.Param("id")
+func (h *TaskHandler) DeleteTasksId(ctx context.Context, request tasks.DeleteTasksIdRequestObject) (tasks.DeleteTasksIdResponseObject, error) {
+	taskID := request.Id.String()
 
-	tasks, err := h.service.DeleteTaskById(id)
-
+	remainingTasks, err := h.service.DeleteTaskById(taskID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return nil, fmt.Errorf("failed to delete task: %w", err)
 	}
 
-	return c.JSON(http.StatusOK, tasks)
+	response := make(tasks.DeleteTasksId200JSONResponse, 0, len(remainingTasks))
+	for _, t := range remainingTasks {
+		uuidVal := openapi_types.UUID(t.ID)
+		task := tasks.Task{
+			Id:     &uuidVal,
+			Name:   t.Name,
+			IsDone: t.IsDone,
+		}
+		response = append(response, task)
+	}
+
+	return response, nil
 }
 
-func (h *TaskHandler) PatchTask(c echo.Context) error {
-	id := c.Param("id")
-	var req taskService.Task
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+func (h *TaskHandler) PatchTasksId(ctx context.Context, request tasks.PatchTasksIdRequestObject) (tasks.PatchTasksIdResponseObject, error) {
+	// Простая валидация
+	if request.Body == nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Request body required")
 	}
 
-	tasks, err := h.service.UpdateTask(id, req)
+	// Обновляем только переданные поля
+	updateData := taskService.Task{
+		ID: request.Id,
+	}
+
+	if request.Body.Name != "" {
+		updateData.Name = request.Body.Name
+	}
+
+	if request.Body.IsDone != nil {
+		updateData.IsDone = request.Body.IsDone
+	}
+
+	updatedTasks, err := h.service.UpdateTask(request.Id.String(), updateData)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, tasks)
+	var response tasks.PatchTasksId200JSONResponse
+	for _, t := range updatedTasks {
+		idCopy := t.ID
+		response = append(response, tasks.Task{
+			Id:     &idCopy,
+			Name:   t.Name,
+			IsDone: t.IsDone,
+		})
+	}
+
+	return response, nil
 }

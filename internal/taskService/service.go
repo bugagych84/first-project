@@ -1,10 +1,8 @@
 package taskService
 
-import "github.com/google/uuid"
-
 // Интерфейс сервиса задач
 type TaskService interface {
-	CreateTask(name string) ([]Task, error)
+	CreateTask(task Task) ([]Task, error)
 	GetAllTasks() ([]Task, error)
 	GetTaskById(taskId string) (Task, error)
 	UpdateTask(taskId string, newTask Task) ([]Task, error)
@@ -24,23 +22,13 @@ func (s taskService) GetAllTasks() ([]Task, error) {
 	return s.repo.GetAllTasks()
 }
 
-func (s taskService) CreateTask(name string) ([]Task, error) {
-	task := Task{
-		ID:     uuid.NewString(),
-		Name:   name,
-		IsDone: false,
-	}
+func (s taskService) CreateTask(task Task) ([]Task, error) {
 
 	if err := s.repo.CreateTask(task); err != nil {
-		return []Task{}, err
+		return nil, err
 	}
 
-	tasks, err := s.GetAllTasks()
-	if err != nil {
-		return []Task{}, err
-	}
-
-	return tasks, nil
+	return s.GetAllTasks()
 }
 
 func (s taskService) GetTaskById(taskId string) (Task, error) {

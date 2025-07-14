@@ -1,6 +1,8 @@
 package main
 
 import (
+	"firstproject/internal/userService"
+	"firstproject/internal/web/users"
 	"log"
 
 	"firstproject/internal/db"
@@ -24,11 +26,18 @@ func main() {
 	serviceTask := taskService.NewTaskService(taskRepo)
 	taskHandler := handlers.NewTaskHandler(serviceTask)
 
+	userRepo := userService.NewUserRepository(dataBase)
+	serviceUser := userService.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(serviceUser)
+
 	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 
-	strictHandler := tasks.NewStrictHandler(taskHandler, nil)
-	tasks.RegisterHandlers(e, strictHandler)
+	strictTaskHandler := tasks.NewStrictHandler(taskHandler, nil)
+	tasks.RegisterHandlers(e, strictTaskHandler)
+
+	strictUserHandler := users.NewStrictHandler(userHandler, nil)
+	users.RegisterHandlers(e, strictUserHandler)
 
 	err = e.Start(":8080")
 	if err != nil {

@@ -27,7 +27,7 @@ func main() {
 	taskHandler := handlers.NewTaskHandler(serviceTask)
 
 	userRepo := userService.NewUserRepository(dataBase)
-	serviceUser := userService.NewUserService(userRepo)
+	serviceUser := userService.NewUserService(userRepo, serviceTask)
 	userHandler := handlers.NewUserHandler(serviceUser)
 
 	e.Use(middleware.CORS())

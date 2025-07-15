@@ -20,6 +20,9 @@ type Task struct {
 	Id     *openapi_types.UUID `json:"id,omitempty"`
 	IsDone *bool               `json:"is_done,omitempty"`
 	Name   string              `json:"name"`
+
+	// UserId ID of the user who owns this task
+	UserId openapi_types.UUID `json:"user_id"`
 }
 
 // PostTasksJSONRequestBody defines body for PostTasks for application/json ContentType.

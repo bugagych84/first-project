@@ -1,79 +1,91 @@
 package userService
 
-// Интерфейс сервиса задач
+import (
+	"firstproject/internal/models"
+	"firstproject/internal/taskService"
+	"fmt"
+	types "github.com/oapi-codegen/runtime/types"
+)
+
 type UserService interface {
-	CreateUser(user User) ([]User, error)
-	GetAllUsers() ([]User, error)
-	GetUserById(userId string) (User, error)
-	UpdateUser(userId string, newUser User) ([]User, error)
-	DeleteUserById(userId string) ([]User, error)
+	CreateUser(user models.User) ([]models.User, error)
+	GetAllUsers() ([]models.User, error)
+	GetUserById(userId types.UUID) (models.User, error)
+	UpdateUser(userId types.UUID, newUser models.User) ([]models.User, error)
+	DeleteUserById(userId types.UUID) ([]models.User, error)
+	GetTasksForUser(userID types.UUID) ([]models.Task, error)
 }
 
-// Структура сервиса задач
 type userService struct {
-	repo UserRepository
+	repo        UserRepository
+	taskService taskService.TaskService
 }
 
-func NewUserService(r UserRepository) UserService {
-	return &userService{repo: r}
+func NewUserService(r UserRepository, ts taskService.TaskService) UserService {
+	return &userService{
+		repo:        r,
+		taskService: ts,
+	}
 }
 
-func (s userService) GetAllUsers() ([]User, error) {
+func (s userService) GetAllUsers() ([]models.User, error) {
 	return s.repo.GetAllUsers()
 }
 
-func (s userService) CreateUser(user User) ([]User, error) {
+func (s userService) CreateUser(user models.User) ([]models.User, error) {
 	if err := s.repo.CreateUser(user); err != nil {
+		return nil, err
+	}
+	return s.GetAllUsers()
+}
+
+func (s userService) GetUserById(userId types.UUID) (models.User, error) {
+	user, err := s.repo.GetUserById(userId)
+	if err != nil {
+		return models.User{}, err
+	}
+	return user, nil
+}
+
+func (s userService) UpdateUser(userId types.UUID, newUser models.User) ([]models.User, error) {
+	user, err := s.repo.GetUserById(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update only allowed fields
+	if newUser.Email != "" {
+		user.Email = newUser.Email
+	}
+	if newUser.Password != "" {
+		user.Password = newUser.Password
+	}
+
+	if err := s.repo.UpdateUser(user); err != nil {
 		return nil, err
 	}
 
 	return s.GetAllUsers()
 }
 
-func (s userService) GetUserById(userId string) (User, error) {
-	user, err := s.repo.GetUserById(userId)
-	if err != nil {
-		return User{}, err
+func (s userService) DeleteUserById(userId types.UUID) ([]models.User, error) {
+	// First check if user has tasks
+	tasks, err := s.taskService.GetTasksByUserID(userId)
+	if err == nil && len(tasks) > 0 {
+		return nil, fmt.Errorf("cannot delete user with existing tasks")
 	}
 
-	return user, nil
+	if err := s.repo.DeleteUserById(userId); err != nil {
+		return nil, err
+	}
+
+	return s.GetAllUsers()
 }
 
-func (s userService) UpdateUser(userId string, newUser User) ([]User, error) {
-	user, err := s.repo.GetUserById(userId)
+func (s userService) GetTasksForUser(userID types.UUID) ([]models.Task, error) {
+	tasks, err := s.taskService.GetTasksByUserID(userID)
 	if err != nil {
-		return []User{}, err
+		return nil, fmt.Errorf("failed to get tasks for user: %w", err)
 	}
-
-	user.Email = newUser.Email
-	user.Password = newUser.Password
-
-	if err := s.repo.UpdateUser(user); err != nil {
-		return []User{}, err
-	}
-
-	users, err := s.GetAllUsers()
-	if err != nil {
-		return []User{}, err
-	}
-	return users, nil
-}
-
-func (s userService) DeleteUserById(userId string) ([]User, error) {
-	_, err := s.repo.GetUserById(userId)
-	if err != nil {
-		return []User{}, err
-	}
-
-	err = s.repo.DeleteUserById(userId)
-	if err != nil {
-		return []User{}, err
-	}
-
-	users, err := s.GetAllUsers()
-	if err != nil {
-		return []User{}, err
-	}
-
-	return users, nil
+	return tasks, nil
 }

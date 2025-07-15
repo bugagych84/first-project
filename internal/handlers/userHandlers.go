@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"firstproject/internal/models"
 	"firstproject/internal/userService"
 	"firstproject/internal/web/users"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	types "github.com/oapi-codegen/runtime/types"
 )
 
 type UserHandler struct {
@@ -45,9 +46,9 @@ func (h *UserHandler) PostUsers(ctx context.Context, request users.PostUsersRequ
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Request body is required")
 	}
 
-	newUUID := openapi_types.UUID(uuid.New())
+	newUUID := types.UUID(uuid.New())
 
-	userToCreate := userService.User{
+	userToCreate := models.User{
 		ID:       newUUID,
 		Email:    request.Body.Email,
 		Password: request.Body.Password,
@@ -72,7 +73,7 @@ func (h *UserHandler) PostUsers(ctx context.Context, request users.PostUsersRequ
 }
 
 func (h *UserHandler) DeleteUsersId(ctx context.Context, request users.DeleteUsersIdRequestObject) (users.DeleteUsersIdResponseObject, error) {
-	userID := request.Id.String()
+	userID := request.Id
 
 	remainingUsers, err := h.service.DeleteUserById(userID)
 	if err != nil {
@@ -81,7 +82,7 @@ func (h *UserHandler) DeleteUsersId(ctx context.Context, request users.DeleteUse
 
 	response := make(users.DeleteUsersId200JSONResponse, 0, len(remainingUsers))
 	for _, t := range remainingUsers {
-		uuidVal := openapi_types.UUID(t.ID)
+		uuidVal := types.UUID(t.ID)
 		user := users.User{
 			Id:       &uuidVal,
 			Email:    t.Email,
@@ -94,13 +95,11 @@ func (h *UserHandler) DeleteUsersId(ctx context.Context, request users.DeleteUse
 }
 
 func (h *UserHandler) PatchUsersId(ctx context.Context, request users.PatchUsersIdRequestObject) (users.PatchUsersIdResponseObject, error) {
-	// Простая валидация
 	if request.Body == nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Request body required")
 	}
 
-	// Обновляем только переданные поля
-	updateData := userService.User{
+	updateData := models.User{
 		ID: request.Id,
 	}
 
@@ -108,7 +107,7 @@ func (h *UserHandler) PatchUsersId(ctx context.Context, request users.PatchUsers
 		updateData.Email = request.Body.Email
 	}
 
-	updatedUsers, err := h.service.UpdateUser(request.Id.String(), updateData)
+	updatedUsers, err := h.service.UpdateUser(request.Id, updateData)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -120,6 +119,29 @@ func (h *UserHandler) PatchUsersId(ctx context.Context, request users.PatchUsers
 			Id:       &idCopy,
 			Email:    t.Email,
 			Password: t.Password,
+		})
+	}
+
+	return response, nil
+}
+
+func (h *UserHandler) GetUsersIdTasks(ctx context.Context, request users.GetUsersIdTasksRequestObject) (users.GetUsersIdTasksResponseObject, error) {
+	userID := request.Id
+
+	tasks, err := h.service.GetTasksForUser(userID)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	response := make(users.GetUsersIdTasks200JSONResponse, 0, len(tasks))
+	for _, t := range tasks {
+		id := t.ID
+		userId := t.UserID
+		response = append(response, users.Task{
+			Id:     &id,
+			UserId: userId,
+			Name:   t.Name,
+			IsDone: t.IsDone,
 		})
 	}
 

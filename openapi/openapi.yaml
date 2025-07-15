@@ -164,6 +164,28 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+
+  /users/{id}/tasks:
+    get:
+      summary: Get all tasks for a user
+      tags: [ users ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      responses:
+        '200':
+          description: A list of user's tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
 components:
   schemas:
     Task:
@@ -173,13 +195,18 @@ components:
           type: string
           format: uuid
           example: "550e8400-e29b-41d4-a716-446655440000"
+        user_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+          description: ID of the user who owns this task
         name:
           type: string
           example: "Buy groceries"
         is_done:
           type: boolean
           example: false
-      required: [name]
+      required: [name, user_id]
 
     User:
       type: object

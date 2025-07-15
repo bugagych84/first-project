@@ -1,0 +1,53 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/bin/
+/dist/
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+/go/pkg/
+
+# Go module files
+go.sum
+
+# IDE-specific files
+## GoLand
+.idea/
+*.iml
+*.iws
+*.ipr
+*.ids
+*.orig
+
+## VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# Debug files
+debug
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Build cache
+/.cache/
